@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Football Analysis — วิเคราะห์ฟุตบอลและดูสถิติย้อนหลัง">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Football Analysis">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <title>Football Analysis</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101827;font-family:system-ui,sans-serif}
+    #app{position:fixed;inset:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:#fff}
+    iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+    #install{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:5;border:0;border-radius:999px;padding:11px 16px;background:#101827;color:#fff;font-weight:700;box-shadow:0 4px 18px #0004;cursor:pointer}
+    #error{display:none;color:#fff;padding:24px;line-height:1.7}
+  </style>
+</head>
+<body>
+  <div id="app"><iframe id="football" title="Football Analysis" allow="clipboard-read; clipboard-write; fullscreen"></iframe></div>
+  <div id="error">ยังไม่ได้ตั้งค่า URL ของ Google Apps Script<br>เปิดไฟล์ <b>config.js</b> แล้วใส่ Web app URL ที่ลงท้ายด้วย <b>/exec</b></div>
+  <button id="install" type="button">ติดตั้งแอป</button>
+  <script src="config.js"></script>
+  <script>
+    (() => {
+      const url = window.FOOTBALL_APP_CONFIG && window.FOOTBALL_APP_CONFIG.GAS_WEB_APP_URL;
+      const frame = document.getElementById('football');
+      const error = document.getElementById('error');
+      const btn = document.getElementById('install');
+      if (!url || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)) {
+        document.getElementById('app').style.display = 'none';
+        error.style.display = 'block';
+      } else {
+        frame.src = url;
+      }
+      let installPrompt = null;
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault(); installPrompt = event; btn.style.display = 'block';
+      });
+      window.addEventListener('appinstalled', () => { installPrompt = null; btn.style.display = 'none'; });
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      btn.addEventListener('click', async () => {
+        if (installPrompt) {
+          installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null;
+        } else if (isIos && !isStandalone) {
+          alert('ติดตั้งบน iPhone/iPad:\n1. เปิดหน้านี้ด้วย Safari\n2. กดปุ่มแชร์ (สี่เหลี่ยมมีลูกศรขึ้น)\n3. เลือก “เพิ่มไปยังหน้าจอโฮม”\n4. กด “เพิ่ม”');
+        } else if (!isStandalone) {
+          alert('เปิดเมนูเบราว์เซอร์ แล้วเลือก “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก”');
+        }
+      });
+      if (isStandalone) btn.style.display = 'none';
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker:', err)));
+      }
+    })();
+  </script>
+</body>
+</html>
